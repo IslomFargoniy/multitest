@@ -91,41 +91,63 @@ export interface Test {
 }
 
 export interface TestPaginate {
-    data: [Test];
+    data: Test[];
     search: string;
     per_page: number;
     from: number;
     to: number;
     total: number;
     current_page: number;
-    links: [Link];
+    last_page: number;
+    links: Link[];
+}
+
+export interface MockStudent {
+    id: number;
+    mock_id: number;
+    name: string;
+    code: string;
+    attended: boolean;
+    phone?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    mock?: Mock;
+    attempt?: Attempt;
 }
 
 export interface Mock {
     id: number;
     user_id: number;
+    test_id?: number;
     name: string;
-    description: string;
-    audio_path: string;
-    starts_at: string;
+    comment?: string;
+    description?: string;
+    audio_path?: string;
+    started_at?: string;
+    starts_at?: string;
+    finished_at?: string;
     slug: string;
     active: number;
-    open: number;
+    open?: number;
+    status?: 'active' | 'scheduled' | 'expired' | 'inactive';
     created_at: string;
     updated_at: string;
     user?: User;
+    test?: Test;
+    students?: MockStudent[];
+    attempts?: Attempt[];
     mock_tests?: MockTest[];
 }
 
 export interface MockPaginate {
-    data: [Mock];
+    data: Mock[];
     search: string;
     per_page: number;
     from: number;
     to: number;
     total: number;
     current_page: number;
-    links: [Link];
+    links: Link[];
 }
 
 export interface MockTest {
@@ -164,14 +186,15 @@ export interface Question {
 }
 
 export interface UserPaginate {
-    data: [User];
+    data: User[];
     search: string;
     per_page: number;
     from: number;
     to: number;
     total: number;
     current_page: number;
-    links: [Link];
+    last_page: number;
+    links: Link[];
 }
 
 export interface User {
@@ -205,10 +228,12 @@ export interface User {
 export interface Attempt {
     id: number;
     name: string;
-    user_id: number;
-    mock_id: number;
+    user_id?: number;
+    mock_id?: number;
+    mock_student_id?: number;
     test_id: number;
     score: number;
+    tab_switch_count?: number;
     review: string;
     started_at: string;
     finished_at: string;
@@ -218,6 +243,8 @@ export interface Attempt {
     user?: User;
     test?: Test;
     mock?: Mock;
+    mock_student?: { id: number; name: string };
+    mockStudent?: { id: number; name: string };
     attempt_parts?: AttemptPart[];
     ai_score_avg?: number;
 }
@@ -264,7 +291,8 @@ export interface AttemptPaginate {
     to: number;
     total: number;
     current_page: number;
-    links: [Link];
+    last_page: number;
+    links: Link[];
 }
 
 export interface Role {

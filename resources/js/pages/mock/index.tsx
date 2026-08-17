@@ -1,29 +1,41 @@
-import MobileSearchModal from '@/components/MobileSearchModal';
-import MockTable from '@/components/mock/mock-table';
-import SearchForm from '@/components/search-form';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type MockPaginate, SearchData } from '@/types';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { Head, usePage, useForm, router } from '@inertiajs/react';
+import { type BreadcrumbItem, type MockPaginate, SearchData, Test, User } from '@/types';
+import MockTable from '@/components/mock/mock-table';
+import FindMockModal from '@/components/mock/find-mock-modal';
+import CreateMockModal from '@/components/mock/create-mock-modal';
+import PremiumFilters from '@/components/premium-filters';
 import { useTranslation } from 'react-i18next';
 
 export default function Mock() {
-    const { mock } = usePage<{ mock: MockPaginate }>().props;
+    const { mock, tests = [], users = [], teachers = [], filters, isAdmin, auth } = usePage<{
+        mock: MockPaginate;
+        tests: Test[];
+        users: User[];
+        teachers?: User[];
+        filters: any;
+        isAdmin: boolean;
+        auth?: any;
+    }>().props;
+
+    const isTeacher = auth?.user?.roles?.some((role: any) => role.name === 'Teacher');
     const { t } = useTranslation();
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
-            // Changed from hardcoded 'mock' to translated key
-            title: t('sidebar.mock'),
+            title: t('mock') || 'Mock Testlar',
             href: '/dashboard',
         },
     ];
 
     const { data, setData } = useForm<SearchData>({
-        search: '',
-        from: '',
-        to: '',
-        per_page: mock.per_page,
+        search: filters?.search || '',
+        teacher_id: filters?.teacher_id || '',
+        user_id: filters?.user_id || '',
+        test_id: filters?.test_id || '',
+        from: filters?.from || '',
+        to: filters?.to || '',
+        per_page: filters?.per_page || mock.per_page,
         page: mock.current_page,
         total: mock.total,
     });
@@ -33,38 +45,50 @@ export default function Mock() {
         router.get(route('mock.index'), data);
     };
 
-    useEffect(() => {
-        const urlParams = new URLSearchParams(location.search);
-        setData({
-            ...data,
-            search: urlParams.get('search') || '',
-            from: urlParams.get('from') || '',
-            to: urlParams.get('to') || '',
-        });
-    }, [location.search]);
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            {/* Added translation for the Meta Title */}
-            <Head title={t('sidebar.mock')} />
-            <div className="flex h-full flex-1 flex-col gap-3 rounded-xl p-1 sm:gap-4 sm:p-4">
-                <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center sm:gap-4">
+            <Head title={t('mock') || 'Mock Testlar'} />
+
+            <div className="flex h-full flex-1 flex-col gap-5 rounded-xl p-4 max-w-7xl mx-auto w-full">
+                {/* Header with Title and Find Mock Modal */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('sidebar.mock')}</h1>
+                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                            {t('mock') || 'Mock Testlar'}
+                        </h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                            {t('mock_exam.subtitle') || "Mock imtihonlarni tashkil qilish, o'quvchilarga kod berish va natijalarni nazorat qilish"}
+                        </p>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <MobileSearchModal data={data} setData={setData} handleSubmit={handleSubmit} />
-                        <div className="hidden lg:block">
-                            <SearchForm handleSubmit={handleSubmit} setData={setData} data={data} />
-                        </div>
+                        <FindMockModal />
+                        {(isAdmin || isTeacher) && (
+                            <CreateMockModal tests={tests} />
+                        )}
                     </div>
                 </div>
 
-                <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-                    <div className="overflow-x-auto p-2">
-                        <MockTable {...mock} searchData={data} />
-                    </div>
+                {/* Search & Filters */}
+                <div className="w-full">
+                    <PremiumFilters
+                        data={data}
+                        setData={setData}
+                        handleSubmit={handleSubmit}
+                        isAdmin={isAdmin}
+                        users={users}
+                        teachers={teachers}
+                        tests={tests}
+                    />
+                </div>
+
+                {/* Cards / Table */}
+                <div className="mt-2">
+                    <MockTable
+                        {...mock}
+                        searchData={data}
+                        tests={tests}
+                    />
                 </div>
             </div>
         </AppLayout>

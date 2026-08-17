@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 
 class StoreMockRequest extends FormRequest
 {
@@ -18,19 +19,9 @@ class StoreMockRequest extends FormRequest
     {
         $this->merge([
             'user_id' => auth()->id(),
+            'slug' => Str::slug($this->name, '-') . '-' . Str::random(5),
+            'starts_at' => $this->started_at ?? $this->starts_at,
         ]);
-
-        $slug = \Str::slug($this->name) . '-' . uniqid();
-
-        $this->merge([
-            'slug' => $slug,
-        ]);
-
-        if (!$this->filled('description')) {
-            $this->merge([
-                'description' => 'This speaking test is powered by multitest.uz. All audio recordings are the exclusive property of this platform and are designed specifically for our users. Please follow the instructions carefully.',
-            ]);
-        }
     }
 
     /**
@@ -41,19 +32,14 @@ class StoreMockRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'exists:users,id'],
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:255'],
-            'audio_path' => [
-                'nullable',
-                'file',
-                'max:12048',
-                'mimetypes:audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,audio/ogg,video/mp4'
-            ],
-            'starts_at' => ['nullable', 'date'],
-            'slug' => ['required', 'string', 'max:255', 'unique:mocks,slug,' . $this->route('mock')],
-            'active' => ['required', 'boolean'],
-            'open' => ['required', 'boolean'],
+            'name' => 'required|string|max:255',
+            'comment' => 'nullable|string',
+            'started_at' => 'required|date',
+            'finished_at' => 'required|date|after:started_at',
+            'user_id' => 'required|exists:users,id',
+            'test_id' => 'required|exists:tests,id',
+            'slug' => 'required|string|max:255|unique:mocks,slug',
+            'active' => 'nullable|boolean',
         ];
     }
 }

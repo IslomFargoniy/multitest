@@ -2,14 +2,16 @@ import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, Sideba
 import { cn } from '@/lib/utils'; // Assuming you have a cn utility for tailwind classes
 import { type NavItem } from '@/types';
 import { router, usePage } from '@inertiajs/react';
+import { useTranslation } from 'react-i18next';
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
     const { url } = usePage();
+    const { t } = useTranslation();
 
     return (
         <SidebarGroup className="px-3 py-2">
             <SidebarGroupLabel className="mb-2 px-2 text-xs font-bold tracking-widest text-slate-400/80 uppercase dark:text-slate-500">
-                Platform
+                {t('sidebar.platform') || 'Platform'}
             </SidebarGroupLabel>
             <SidebarMenu className="gap-1.5">
                 {items.map((item) => {

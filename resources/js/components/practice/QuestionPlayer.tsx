@@ -1,9 +1,10 @@
 import CircularTimer from '@/components/practice/CircularTimer';
 import { useTelegramBackButton, useHaptic } from '@/components/telegram-theme-provider';
 import { router } from '@inertiajs/react';
-import { CloudUpload, Info, Maximize, Mic, Minimize, Timer, Volume2 } from 'lucide-react';
+import { CloudUpload, Info, Maximize, Mic, Minimize, Timer, Volume2, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 
 export default function QuestionPlayer({ attempt_part }: any) {
     const { t } = useTranslation();
@@ -14,8 +15,45 @@ export default function QuestionPlayer({ attempt_part }: any) {
     const [timer, setTimer] = useState(0);
     const [totalTime, setTotalTime] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [tabSwitchCount, setTabSwitchCount] = useState(0);
+    const [showViolationModal, setShowViolationModal] = useState(false);
 
     const { impact, selection, notification } = useHaptic();
+
+    // Anti-Cheat: Record tab switch and focus loss
+    useEffect(() => {
+        const attemptId = attempt_part.attempt_id || attempt_part.attempt?.id;
+
+        const reportViolation = () => {
+            if (phase !== 'uploading') {
+                setTabSwitchCount((prev) => prev + 1);
+                setShowViolationModal(true);
+                if (attemptId) {
+                    axios.post(route('practice-attempt-violation', attemptId), { count: 1 }).catch(() => {});
+                }
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.hidden && phase !== 'uploading') {
+                reportViolation();
+            }
+        };
+
+        const handleBlur = () => {
+            if (phase !== 'uploading' && phase !== 'introduction') {
+                reportViolation();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleBlur);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('blur', handleBlur);
+        };
+    }, [attempt_part, phase]);
 
     // Show native BackButton to exit test with confirmation
     useTelegramBackButton(phase !== 'uploading', () => {
@@ -299,22 +337,68 @@ export default function QuestionPlayer({ attempt_part }: any) {
     }, []);
 
     return (
-        <div ref={playerRef} className={`mx-auto w-full overflow-hidden border border-border bg-card shadow-2xl transition-all duration-300 ${isFullscreen ? 'rounded-none' : 'rounded-2xl md:rounded-[2.5rem]'}`}>
-            <div className="flex items-center justify-between border-b border-border bg-muted/50 px-4 py-3 md:px-8 md:py-4">
+        <div
+            ref={playerRef}
+            onContextMenu={(e) => e.preventDefault()}
+            onCopy={(e) => e.preventDefault()}
+            onCut={(e) => e.preventDefault()}
+            onPaste={(e) => e.preventDefault()}
+            className={`relative select-none mx-auto w-full overflow-hidden border border-border bg-card shadow-2xl transition-all duration-300 ${isFullscreen ? 'rounded-none' : 'rounded-2xl md:rounded-[2.5rem]'}`}
+        >
+            {/* Anti-Cheat Violation Warning Modal Overlay */}
+            {showViolationModal && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in">
+                    <div className="max-w-md w-full rounded-2xl bg-white dark:bg-gray-900 border-2 border-red-500 p-6 shadow-2xl text-center space-y-4">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400">
+                            <ShieldAlert className="h-8 w-8 animate-bounce" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-black text-gray-900 dark:text-white">
+                                ⚠️ Qoidabuzarlik Qayd Etildi!
+                            </h3>
+                            <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
+                                Imtihon davomida boshqa oynaga (tab) o'tish yoki ilovani yashirish taqiqlanadi. 
+                                Har bir holat tizim tomonidan qayd etilmoqda va o'qituvchiga ma'lum qilinadi.
+                            </p>
+                        </div>
+                        <div className="py-2 px-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs font-bold text-red-700 dark:text-red-300">
+                            Buzilishlar soni: {tabSwitchCount} marta
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowViolationModal(false)}
+                            className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer"
+                        >
+                            Tushundim, testni davom ettirish
+                        </button>
+                    </div>
+                </div>
+            )}
 
+            <div className="flex items-center justify-between border-b border-border bg-muted/50 px-4 py-3 md:px-8 md:py-4">
                 <div className="flex items-center gap-3">
                     <span className="rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-bold tracking-wide text-white uppercase">
                         {t('question_player.part_label')}
                     </span>
                     <h1 className="text-base md:text-lg font-bold tracking-tight text-slate-800 dark:text-slate-100">{attempt_part.part.title}</h1>
                 </div>
-                <button
-                    onClick={toggleFullscreen}
-                    className="flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 p-2 text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"
-                    title={isFullscreen ? t('common.exit_fullscreen') : t('common.fullscreen')}
-                >
-                    {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-                </button>
+
+                <div className="flex items-center gap-2">
+                    {tabSwitchCount > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-[10px] font-bold border border-red-200 dark:border-red-800">
+                            <AlertTriangle className="w-3 h-3" />
+                            {tabSwitchCount} ta ogohlantirish
+                        </span>
+                    )}
+
+                    <button
+                        onClick={toggleFullscreen}
+                        className="flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 p-2 text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                        title={isFullscreen ? t('common.exit_fullscreen') : t('common.fullscreen')}
+                    >
+                        {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                    </button>
+                </div>
             </div>
 
             <div className="grid min-h-[500px] grid-cols-1 md:grid-cols-12">

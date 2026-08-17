@@ -22,4 +22,31 @@ export default defineConfig({
             'ziggy-js': resolve(__dirname, 'vendor/tightenco/ziggy'),
         },
     },
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        if (id.includes('xlsx')) {
+                            return 'vendor-xlsx';
+                        }
+                        if (
+                            id.includes('chart.js') ||
+                            id.includes('react-chartjs-2') ||
+                            id.includes('apexcharts') ||
+                            id.includes('react-apexcharts')
+                        ) {
+                            return 'vendor-charts';
+                        }
+                        if (id.includes('lucide-react') || id.includes('@iconify')) {
+                            return 'vendor-icons';
+                        }
+                        if (id.includes('@radix-ui')) {
+                            return 'vendor-radix';
+                        }
+                    }
+                },
+            },
+        },
+    },
 });

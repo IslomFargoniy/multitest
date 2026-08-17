@@ -85,10 +85,11 @@ export default function CreateTestModal() {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <button
-                    className={` ${baseButton} group bg-indigo-600 px-5 py-2.5 text-white shadow-lg shadow-indigo-200 transition-all hover:bg-indigo-700 hover:shadow-indigo-300 dark:bg-indigo-600 dark:shadow-none dark:hover:bg-indigo-500`}
+                    type="button"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 shadow-xs transition-all active:scale-95 cursor-pointer"
                 >
-                    <IoCreate className="h-4 w-4 transition-transform group-hover:rotate-12" />
-                    <span className="font-bold tracking-tight">{t('common.create')}</span>
+                    <IoCreate className="h-4 w-4" />
+                    <span>{t('create_test') || t('common.create') || 'Test yaratish'}</span>
                 </button>
             </DialogTrigger>
 

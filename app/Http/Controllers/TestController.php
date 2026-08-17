@@ -62,7 +62,8 @@ class TestController extends Controller
             $testQuery = Test::query()
                 ->with([
                     'language',
-                    'parts'
+                    'parts',
+                    'user:id,name,avatar',
                 ]);
 
             if ($request->search) {

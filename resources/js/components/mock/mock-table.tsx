@@ -1,24 +1,69 @@
 import DeleteItemModal from '@/components/delete-item-modal';
-import CreateAttemptModal from '@/components/mock/create-attempt-modal';
 import CreateMockModal from '@/components/mock/create-mock-modal';
-import CreateMockTestModal from '@/components/mock/create-mock-test-modal';
 import UpdateMockModal from '@/components/mock/update-mock-modal';
-import { Auth, SearchData, type MockPaginate } from '@/types';
+import MockStudentManager from '@/components/mock/mock-student-manager';
+import TablePagination from '@/components/ui/table-pagination';
+import { Auth, Mock, type MockPaginate, SearchData, Test } from '@/types';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { CheckCircle2, ChevronLeft, ChevronRight, Copy, Headphones, Layers, LayoutGrid, Lock, LockOpen, PlusCircle, Sparkles } from 'lucide-react';
+import { format } from 'date-fns';
+import { CheckCircle, Clock, MinusCircle, PencilIcon, TrashIcon } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface MockTableProps extends MockPaginate {
     searchData: SearchData;
+    tests: Test[];
 }
 
-const MockTable = ({ searchData, ...mock }: MockTableProps) => {
+const MockTable = ({ tests = [], searchData, ...mock }: MockTableProps) => {
     const { t } = useTranslation();
-    const { auth } = usePage().props as unknown as { auth?: Auth };
+    const [open, setOpen] = useState(false);
+    const [openDelete, setOpenDelete] = useState(false);
+    const [selectedMock, setSelectedMock] = useState<Mock | null>(null);
 
+    const { auth } = usePage().props as unknown as { auth?: Auth };
     const isAdmin = auth?.user?.roles?.some((role) => role.name === 'Admin');
-    const isTeacher = auth?.user?.roles?.some((role) => role.name === 'Teacher');
+
+    const renderStatusBadge = (item: Mock) => {
+        const status = (item as any).status || (item.active ? 'active' : 'inactive');
+        if (!item.active || status === 'inactive') {
+            return (
+                <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-[10px] font-bold text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                    <MinusCircle className="mr-1 h-3 w-3" /> {t('inactive') || 'Nofaol'}
+                </span>
+            );
+        }
+        if (status === 'scheduled') {
+            return (
+                <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                    <Clock className="mr-1 h-3 w-3" /> {t('scheduled') || 'Boshlanmagan'}
+                </span>
+            );
+        }
+        if (status === 'expired') {
+            return (
+                <span className="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-900/20 dark:text-rose-400">
+                    <MinusCircle className="mr-1 h-3 w-3" /> {t('expired') || 'Vaqti tugagan'}
+                </span>
+            );
+        }
+        return (
+            <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                <CheckCircle className="mr-1 h-3 w-3" /> {t('active') || 'Faol'}
+            </span>
+        );
+    };
+
+    const handleUpdateClick = (mockData: Mock) => {
+        setSelectedMock(mockData);
+        setOpen(true);
+    };
+
+    const handleDeleteClick = (mockData: Mock) => {
+        setSelectedMock(mockData);
+        setOpenDelete(true);
+    };
 
     const { delete: deleteMock, reset, clearErrors } = useForm();
 
@@ -28,222 +73,140 @@ const MockTable = ({ searchData, ...mock }: MockTableProps) => {
             onSuccess: () => {
                 reset();
                 clearErrors();
-                toast.success(t('success.deleted'));
+                setOpenDelete(false);
+                toast.success(t('deleted_successfully') || "Mock o'chirildi");
             },
-            onError: (err) => toast.error(err?.error || t('error.delete_failed')),
+            onError: (err: any) => {
+                const errorMessage = err?.error || t('delete_failed') || "O'chirishda xatolik";
+                toast.error(errorMessage);
+            },
         });
     };
 
-    const handleMockTestDelete = (id: number) => {
-        deleteMock(route('mock-test.destroy', id), {
-            preserveScroll: true,
-            onSuccess: () => {
-                reset();
-                clearErrors();
-                toast.success(t('success.deleted'));
-            },
-            onError: (err) => toast.error(err?.error || t('error.delete_failed')),
-        });
-    };
-
-    const copyToClipboard = (slug: string) => {
-        navigator.clipboard.writeText(`${slug}`);
-        toast.success(t('mock_table.link_copied'));
+    const formatSafeDate = (d?: string | null) => {
+        if (!d) return '-';
+        try {
+            return format(new Date(d), 'MMM dd, HH:mm');
+        } catch {
+            return '-';
+        }
     };
 
     return (
-        <div className="space-y-8">
-            {/* 🏷️ SECTION HEADER */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-8 dark:border-slate-800">
-                <div className="flex items-center gap-5">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-indigo-600 text-white shadow-xl shadow-indigo-500/20 dark:shadow-none">
-                        <LayoutGrid className="h-7 w-7" />
-                    </div>
-                    <div>
-                        <h2 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">{t('mock_table.title')}</h2>
-                        <div className="mt-1 flex items-center gap-2">
-                            <Sparkles className="h-3 w-3 text-indigo-500" />
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('mock_table.description')}</p>
-                        </div>
-                    </div>
-                </div>
-                {(isAdmin || isTeacher) && <CreateMockModal />}
+        <div>
+            <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('mock') || 'Mock Testlar'}</h2>
+                <CreateMockModal tests={tests} />
             </div>
 
-            {/* 🎴 CARDS GRID */}
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {mock.data.map((item, index) => {
-                    const globalIndex = (mock.current_page - 1) * mock.per_page + index + 1;
+            {/* Cards Grid */}
+            {mock.data.length === 0 ? (
+                <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-12 text-center text-sm text-slate-500">
+                    {t('mock_exam.no_mocks_found') || 'Hozircha hech qanday mock test mavjud emas. Yangi mock test yaratishingiz mumkin.'}
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {mock.data.map((item, index) => {
+                        const globalIndex = (mock.current_page - 1) * mock.per_page + index + 1;
 
-                    return (
-                        <div
-                            key={item.id}
-                            className="group relative flex flex-col rounded-[2.5rem] border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/10 dark:border-slate-800 dark:bg-slate-900"
-                        >
-                            {/* Visual Accent */}
-                            <div className="absolute top-0 h-32 w-full rounded-t-[2.5rem] bg-gradient-to-br from-indigo-500/5 to-transparent" />
-
-                            <div className="relative flex flex-1 flex-col p-8">
-                                {/* Header: Index & Status */}
-                                <div className="mb-6 flex items-center justify-between">
-                                    {/* Index Indicator */}
-                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-xs font-black text-white shadow-lg dark:bg-white dark:text-slate-900">
-                                        {globalIndex}
-                                    </span>
-
-                                    <div className="flex items-center gap-2">
-                                        {/* Copy Button */}
-                                        <button
-                                            onClick={() => copyToClipboard(item.slug)}
-                                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all hover:bg-indigo-50 hover:text-indigo-600 active:scale-90 dark:bg-slate-800 dark:hover:bg-indigo-900/40"
-                                            title={t('mock_table.copy_link')}
-                                        >
-                                            <Copy className="h-4 w-4" />
-                                        </button>
-
-                                        {/* Status Badges */}
-                                        <div className="flex gap-1.5">
-                                            {/* Active/Passive State */}
-                                            <span
-                                                className={`flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-black tracking-widest uppercase ${
-                                                    item.active
-                                                        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500'
-                                                }`}
-                                            >
-                                                <CheckCircle2 className="h-3 w-3" />
-                                                {item.active ? t('common.active') : t('common.passive')}
-                                            </span>
-
-                                            {/* Open/Closed State */}
-                                            <span
-                                                className={`flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-black tracking-widest uppercase ${
-                                                    item.open
-                                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                                                        : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
-                                                }`}
-                                            >
-                                                {item.open ? <LockOpen className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                                                {item.open ? t('common.open') : t('common.closed')}
-                                            </span>
-                                        </div>
+                        return (
+                            <div
+                                key={item.id}
+                                className="group flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                {/* Header */}
+                                <div className="mb-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-bold font-mono text-indigo-600 dark:text-indigo-400">
+                                            #{globalIndex.toString().padStart(2, '0')}
+                                        </span>
+                                        {renderStatusBadge(item)}
+                                    </div>
+                                    <h3 className="line-clamp-1 text-lg font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors">
+                                        <Link href={`/mock/${item.id}`}>{item.name}</Link>
+                                    </h3>
+                                    <div className="mt-1 flex items-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                        <span className="truncate">{item.test?.name || t('mock_exam.no_test_selected') || 'Test tanlanmagan'}</span>
                                     </div>
                                 </div>
 
-                                {/* Mock Info */}
-                                <div className="mb-6">
-                                    <h3 className="line-clamp-1 text-2xl font-black tracking-tight text-slate-900 transition-colors group-hover:text-indigo-600 dark:text-white">
-                                        {item.name}
-                                    </h3>
-                                    <p className="mt-3 line-clamp-2 min-h-[40px] text-sm leading-relaxed font-medium text-slate-500 dark:text-slate-400">
-                                        {item.description || t('mock_table.no_description')}
+                                {/* Comment */}
+                                <div className="mb-4 flex-grow">
+                                    <p className="line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400 italic">
+                                        {item.comment || item.description || t('no_comment') || "Izoh yo'q"}
                                     </p>
                                 </div>
 
-                                {/* Introductory Audio */}
-                                {item.audio_path && (
-                                    <div className="mb-6 space-y-2.5">
-                                        <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-400 uppercase">
-                                            <Headphones className="h-3.5 w-3.5" />
-                                            {t('mock_table.intro_audio')}
-                                        </div>
-                                        <div className="rounded-2xl bg-slate-50 p-2.5 dark:bg-slate-950/50">
-                                            <audio preload="none" controls controlsList="nodownload" className="h-8 w-full opacity-80">
-                                                <source src={item.audio_path} />
-                                            </audio>
-                                        </div>
+                                {/* Dates */}
+                                <div className="mb-4 space-y-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50 text-xs">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">{t('started_at') || 'Boshlanadi'}</span>
+                                        <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                                            {formatSafeDate(item.started_at || item.starts_at)}
+                                        </span>
                                     </div>
-                                )}
-
-                                {/* Tests List */}
-                                <div className="mb-8 flex-1">
-                                    <h4 className="mb-4 flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-400 uppercase">
-                                        <Layers className="h-3.5 w-3.5" />
-                                        {t('mock_table.included_tests')}
-                                    </h4>
-                                    <div className="space-y-2.5">
-                                        {item.mock_tests?.length ? (
-                                            item.mock_tests.map((mockTest, i) => (
-                                                <div
-                                                    key={mockTest.id}
-                                                    className="group/item flex items-center justify-between rounded-2xl border border-slate-50 bg-slate-50/50 px-4 py-3.5 transition-all hover:border-indigo-100 hover:bg-white dark:border-slate-800 dark:bg-slate-800/20"
-                                                >
-                                                    <span className="truncate text-xs font-bold text-slate-700 dark:text-slate-300">
-                                                        {i + 1}. {mockTest.test?.name}
-                                                    </span>
-                                                    {(isAdmin || isTeacher) && (
-                                                        <div className="opacity-0 transition-opacity group-hover/item:opacity-100">
-                                                            <DeleteItemModal item={mockTest} onDelete={handleMockTestDelete} />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-100 py-8 text-center dark:border-slate-800">
-                                                <PlusCircle className="mb-2 h-6 w-6 text-slate-300" />
-                                                <span className="text-[10px] font-black tracking-wider text-slate-400 uppercase">
-                                                    {t('mock_table.no_tests')}
-                                                </span>
-                                            </div>
-                                        )}
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">{t('finished_at') || 'Tugaydi'}</span>
+                                        <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                                            {formatSafeDate(item.finished_at)}
+                                        </span>
                                     </div>
                                 </div>
 
-                                {/* Action Buttons */}
-                                <div className="space-y-3.5">
-                                    <CreateAttemptModal mock={item} />
+                                {/* Actions */}
+                                <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                                    <MockStudentManager
+                                        mockId={item.id}
+                                        mockName={item.name}
+                                        students={(item as any).students ?? []}
+                                    />
 
-                                    {(isAdmin || isTeacher) && (
-                                        <div className="flex items-center gap-2 rounded-[1.5rem] bg-slate-50 p-2.5 dark:bg-slate-800/50">
-                                            <div className="flex flex-1 gap-2">
-                                                <CreateMockTestModal mock={item} />
-                                                <UpdateMockModal mock={item} />
-                                            </div>
-                                            <div className="mx-1 h-10 w-[1px] bg-slate-200 dark:bg-slate-700" />
-                                            <DeleteItemModal item={item} onDelete={handleDelete} />
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleUpdateClick(item)}
+                                            className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl font-semibold text-xs transition-all cursor-pointer shadow-xs active:scale-95"
+                                            title={t('edit') || 'Tahrirlash'}
+                                        >
+                                            <PencilIcon className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteClick(item)}
+                                            className="p-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white rounded-xl font-semibold text-xs transition-all cursor-pointer shadow-xs active:scale-95"
+                                            title={t('delete') || "O'chirish"}
+                                        >
+                                            <TrashIcon className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Modals */}
+            {selectedMock && open && <UpdateMockModal tests={tests} mock={selectedMock} open={open} setOpen={setOpen} />}
+
+            {selectedMock && openDelete && (
+                <DeleteItemModal
+                    item={selectedMock}
+                    open={openDelete}
+                    setOpen={setOpenDelete}
+                    onDelete={handleDelete}
+                />
+            )}
 
             {/* Pagination */}
-            <div className="flex flex-col items-center justify-between gap-4 rounded-[2.5rem] border border-slate-100 bg-white p-6 shadow-sm md:flex-row dark:border-slate-800 dark:bg-slate-900">
-                <div className="pl-4 text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">
-                    {t('common.showing', { from: mock.from, to: mock.to, total: mock.total })}
-                </div>
-                <div className="flex items-center gap-2">
-                    {mock.links.map((link, idx) => (
-                        <Link
-                            key={idx}
-                            href={link.url ? `${link.url}&${new URLSearchParams(
-                                Object.entries(searchData).reduce((acc, [k, v]) => {
-                                    if (k !== 'page' && k !== 'total' && v !== '' && v !== null && v !== undefined) acc[k] = String(v);
-                                    return acc;
-                                }, {} as Record<string, string>)
-                            ).toString()}` : '#'}
-                            className={`flex h-11 min-w-[44px] items-center justify-center rounded-2xl px-4 text-xs font-black transition-all ${
-                                link.active
-                                    ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/30'
-                                    : !link.url
-                                      ? 'cursor-not-allowed opacity-20'
-                                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                            }`}
-                        >
-                            {link.label.includes('Previous') ? (
-                                <ChevronLeft className="h-5 w-5" />
-                            ) : link.label.includes('Next') ? (
-                                <ChevronRight className="h-5 w-5" />
-                            ) : (
-                                <span dangerouslySetInnerHTML={{ __html: link.label }} />
-                            )}
-                        </Link>
-                    ))}
-                </div>
-            </div>
+            <TablePagination
+                from={mock.from}
+                to={mock.to}
+                total={mock.total}
+                per_page={mock.per_page}
+                links={mock.links}
+                searchParams={searchData}
+            />
         </div>
     );
 };

@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { FormEventHandler, useEffect, useRef, useState } from 'react';
+import { FormEventHandler, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import InputError from '@/components/input-error';
@@ -8,235 +8,230 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
-import { baseButton } from '@/components/ui/baseButton';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
-import { Mock } from '@/types';
-import { Activity, Calendar, Headphones, LayoutGrid, Lock, Pencil, UploadCloud } from 'lucide-react';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Mock, Test } from '@/types';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 
 interface UpdateMockModalProps {
+    tests: Test[];
     mock: Mock;
+    open: boolean;
+    setOpen: (open: boolean) => void;
 }
 
-interface MockUpdateForm {
-    [key: string]: string | number | File | undefined | null;
-    name: string;
-    description: string;
-    audio_path: string | File;
-    starts_at: string;
-    active: number;
-    open: number;
-    _method: 'PUT';
-}
-
-export default function UpdateMockModal({ mock }: UpdateMockModalProps) {
+export default function UpdateMockModal({ tests = [], mock, open, setOpen }: UpdateMockModalProps) {
     const { t } = useTranslation();
     const nameInput = useRef<HTMLInputElement>(null);
-    const [open, setOpen] = useState(false);
 
-    const { data, setData, post, processing, reset, errors, clearErrors } = useForm<MockUpdateForm>({
+    const formatSafeDate = (d?: string | null) => {
+        if (!d) return '';
+        try {
+            return format(new Date(d), 'yyyy-MM-dd HH:mm');
+        } catch {
+            return '';
+        }
+    };
+
+    const { data, setData, put, processing, reset, errors, clearErrors } = useForm({
         name: mock.name || '',
-        description: mock.description ?? '',
-        audio_path: '',
-        starts_at: mock.starts_at ?? '',
-        active: mock.active,
-        open: mock.open,
-        _method: 'PUT',
+        comment: mock.comment || '',
+        started_at: formatSafeDate(mock.started_at || mock.starts_at),
+        finished_at: formatSafeDate(mock.finished_at),
+        test_id: mock.test_id || (mock.mock_tests && mock.mock_tests[0]?.test_id) || null,
+        active: mock.active ? 1 : 0,
     });
 
-    // Ensure form is fresh when modal opens or mock changes
     useEffect(() => {
-        if (open) {
+        if (mock) {
             setData({
                 name: mock.name || '',
-                description: mock.description ?? '',
-                audio_path: '',
-                starts_at: mock.starts_at ?? '',
-                active: mock.active,
-                open: mock.open,
-                _method: 'PUT',
+                comment: mock.comment || '',
+                started_at: formatSafeDate(mock.started_at || mock.starts_at),
+                finished_at: formatSafeDate(mock.finished_at),
+                test_id: mock.test_id || (mock.mock_tests && mock.mock_tests[0]?.test_id) || null,
+                active: mock.active ? 1 : 0,
             });
         }
-    }, [open, mock, setData]);
+    }, [mock]);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        post(route('mock.update', mock.id), {
-            forceFormData: true,
+        put(route('mock.update', mock.id), {
             preserveScroll: true,
             onSuccess: () => {
+                reset();
+                clearErrors();
                 setOpen(false);
-                toast.success(t('success.updated'));
+                toast.success(t('mock_updated') || 'Mock test yangilandi');
             },
-            onError: (err) => {
+            onError: (err: any) => {
+                const errorMessage = err?.error || err?.name || t('update_failed') || 'Xatolik yuz berdi';
+                toast.error(errorMessage);
                 nameInput.current?.focus();
-                toast.error(err?.error || t('error.update_failed'));
             },
         });
     };
 
     return (
-        <>
-            <button
-                onClick={() => setOpen(true)}
-                type="button"
-                className={`${baseButton} flex h-9 w-9 items-center justify-center border border-slate-200 bg-white p-0 text-slate-600 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-indigo-900/40`}
-            >
-                <Pencil className="h-4 w-4 shrink-0" />
-            </button>
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent className="sm:max-w-lg w-full rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-800 max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="space-y-1 pb-2 border-b border-gray-100 dark:border-gray-800">
+                    <DialogTitle className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        {t('modal.update_mock_title') || 'Mock Testni Tahrirlash'}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-gray-500 dark:text-gray-400">
+                        {t('modal.update_mock_desc') || 'Mock test ma\'lumotlarini o\'zgartiring'}
+                    </DialogDescription>
+                </DialogHeader>
 
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="flex max-h-[95vh] !w-[1000px] !max-w-[95vw] flex-col gap-0 overflow-hidden rounded-[2.5rem] border-none bg-white p-0 shadow-2xl dark:bg-slate-900">
-                    {/* Header (Fixed) */}
-                    <div className="flex-none border-b border-slate-100 bg-slate-50/80 px-10 py-8 dark:border-slate-800 dark:bg-slate-800/40">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-200 dark:shadow-none">
-                                <LayoutGrid className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                                    {t('modal.update_mock_title')}
-                                </DialogTitle>
-                                <DialogDescription className="font-medium text-slate-500 dark:text-slate-400">
-                                    {t('modal.update_mock_description')}
-                                </DialogDescription>
-                            </div>
+                <form onSubmit={submit} className="space-y-4 pt-2">
+                    <div>
+                        <Label htmlFor="name">{t('name') || 'Nomi'}</Label>
+                        <Input
+                            id="name"
+                            ref={nameInput}
+                            value={data.name}
+                            onChange={(e) => setData('name', e.target.value)}
+                            required
+                        />
+                        <InputError message={errors.name} />
+                    </div>
+
+                    <div>
+                        <Label htmlFor="comment">{t('comment') || 'Izoh / Tavsif'}</Label>
+                        <Input
+                            id="comment"
+                            value={data.comment}
+                            onChange={(e) => setData('comment', e.target.value)}
+                        />
+                        <InputError message={errors.comment} />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="started_at">{t('started_at') || 'Boshlanish vaqti'}</Label>
+                            <DatePicker
+                                selected={data.started_at ? new Date(data.started_at) : null}
+                                onChange={(date: Date | null) => {
+                                    if (date) {
+                                        setData('started_at', format(date, 'yyyy-MM-dd HH:mm'));
+                                    }
+                                }}
+                                showTimeSelect
+                                timeFormat="HH:mm"
+                                timeIntervals={15}
+                                dateFormat="yyyy-MM-dd HH:mm"
+                                className="border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white p-2 rounded-xl text-xs w-full mt-1.5"
+                                wrapperClassName="w-full"
+                                required
+                            />
+                            <InputError message={errors.started_at} />
+                        </div>
+
+                        <div>
+                            <Label htmlFor="finished_at">{t('finished_at') || 'Tugash vaqti'}</Label>
+                            <DatePicker
+                                selected={data.finished_at ? new Date(data.finished_at) : null}
+                                onChange={(date: Date | null) => {
+                                    if (date) {
+                                        setData('finished_at', format(date, 'yyyy-MM-dd HH:mm'));
+                                    }
+                                }}
+                                showTimeSelect
+                                timeFormat="HH:mm"
+                                timeIntervals={15}
+                                dateFormat="yyyy-MM-dd HH:mm"
+                                className="border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white p-2 rounded-xl text-xs w-full mt-1.5"
+                                wrapperClassName="w-full"
+                                required
+                            />
+                            <InputError message={errors.finished_at} />
                         </div>
                     </div>
 
-                    <form onSubmit={submit} className="flex flex-1 flex-col overflow-hidden">
-                        {/* Scrollable Body */}
-                        <div className="flex-1 space-y-8 overflow-y-auto p-10">
-                            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                                <div className="space-y-6">
-                                    <div className="space-y-3">
-                                        <Label className="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">{t('common.name')}</Label>
-                                        <Input
-                                            ref={nameInput}
-                                            className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 px-6 font-bold dark:border-slate-800 dark:bg-slate-950"
-                                            value={data.name}
-                                            onChange={(e) => setData('name', e.target.value)}
-                                        />
-                                        <InputError message={errors.name} />
-                                    </div>
+                    <div>
+                        <Label htmlFor="test_id">{t('select_test') || 'Testni tanlang'}</Label>
+                        <Select
+                            value={String(data.test_id || '')}
+                            onValueChange={(value) => setData('test_id', Number(value))}
+                        >
+                            <SelectTrigger className="w-full mt-1.5 rounded-xl border border-gray-300 dark:border-gray-700">
+                                <span>
+                                    {data.test_id
+                                        ? (() => {
+                                              const selTest = tests.find((t) => t.id === data.test_id);
+                                              return selTest ? selTest.name : t('select_test') || 'Testni tanlang';
+                                          })()
+                                        : t('select_test') || 'Testni tanlang'}
+                                </span>
+                            </SelectTrigger>
 
-                                    <div className="space-y-3">
-                                        <Label className="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">
-                                            {t('common.description')}
-                                        </Label>
-                                        <Input
-                                            className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 px-6 font-bold dark:border-slate-800 dark:bg-slate-950"
-                                            value={data.description}
-                                            onChange={(e) => setData('description', e.target.value)}
-                                        />
-                                        <InputError message={errors.description} />
-                                    </div>
-                                </div>
+                            <SelectContent className="max-h-60 rounded-xl bg-white dark:bg-gray-900">
+                                {tests.map((test) => (
+                                    <SelectItem key={test.id} value={String(test.id)}>
+                                        {test.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.test_id} />
+                    </div>
 
-                                <div className="space-y-6">
-                                    <div className="space-y-3">
-                                        <Label className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">
-                                            <Headphones className="h-3.5 w-3.5 text-indigo-500" />
-                                            {t('mock_table.intro_audio')}
-                                        </Label>
-                                        <div className="group relative flex h-14 items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 transition-all hover:border-indigo-400 dark:border-slate-800 dark:bg-slate-950">
-                                            <UploadCloud className="absolute left-4 h-5 w-5 text-slate-400 group-hover:text-indigo-500" />
-                                            <span className="max-w-[200px] truncate pl-6 text-xs font-bold text-slate-500 dark:text-slate-400">
-                                                {data.audio_path ? (data.audio_path as File).name : t('common.replace_audio_optional')}
-                                            </span>
-                                            <Input
-                                                type="file"
-                                                className="absolute inset-0 cursor-pointer opacity-0"
-                                                onChange={(e) => {
-                                                    if (e.target.files && e.target.files.length > 0) {
-                                                        setData('audio_path', e.target.files[0]);
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                        <InputError message={errors.audio_path} />
-                                    </div>
+                    <div>
+                        <Label htmlFor="status" className="mb-2 block">
+                            {t('status') || 'Holati (Faol)'}
+                        </Label>
+                        <label className="inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                id="status"
+                                className="sr-only peer"
+                                checked={data.active === 1}
+                                onChange={(e) => setData('active', e.target.checked ? 1 : 0)}
+                            />
+                            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:w-5 after:h-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+                        </label>
+                        <InputError message={errors.active} />
+                    </div>
 
-                                    <div className="space-y-3">
-                                        <Label className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">
-                                            <Calendar className="h-3.5 w-3.5 text-indigo-500" />
-                                            {t('mock_table.starts_at')}
-                                        </Label>
-                                        <Input
-                                            type="datetime-local"
-                                            className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 px-6 font-bold dark:border-slate-800 dark:bg-slate-950"
-                                            value={data.starts_at}
-                                            onChange={(e) => setData('starts_at', e.target.value)}
-                                        />
-                                        <InputError message={errors.starts_at} />
-                                    </div>
-                                </div>
-                            </div>
+                    <DialogFooter className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <DialogClose asChild>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="rounded-xl text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 cursor-pointer"
+                                onClick={() => {
+                                    reset();
+                                    clearErrors();
+                                    setOpen(false);
+                                }}
+                            >
+                                {t('cancel') || 'Bekor qilish'}
+                            </Button>
+                        </DialogClose>
 
-                            <div className="grid grid-cols-1 gap-8 pt-4 md:grid-cols-2">
-                                <div className="space-y-3">
-                                    <Label className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">
-                                        <Activity className="h-3.5 w-3.5 text-emerald-500" />
-                                        {t('mock_table.active_status')}
-                                    </Label>
-                                    <select
-                                        value={String(data.active)}
-                                        onChange={(e) => setData('active', Number(e.target.value))}
-                                        className="block h-14 w-full rounded-2xl border-slate-200 bg-slate-50/50 px-6 font-bold shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-800 dark:bg-slate-950"
-                                    >
-                                        <option value={0}>{t('common.no')}</option>
-                                        <option value={1}>{t('common.yes')}</option>
-                                    </select>
-                                    <InputError message={errors.active} />
-                                </div>
-
-                                <div className="space-y-3">
-                                    <Label className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">
-                                        <Lock className="h-3.5 w-3.5 text-blue-500" />
-                                        {t('mock_table.availability')}
-                                    </Label>
-                                    <select
-                                        value={String(data.open)}
-                                        onChange={(e) => setData('open', Number(e.target.value))}
-                                        className="block h-14 w-full rounded-2xl border-slate-200 bg-slate-50/50 px-6 font-bold shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-800 dark:bg-slate-950"
-                                    >
-                                        <option value={0}>{t('common.no')}</option>
-                                        <option value={1}>{t('common.yes')}</option>
-                                    </select>
-                                    <InputError message={errors.open} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer (Fixed) */}
-                        <DialogFooter className="flex-none border-t border-slate-100 bg-slate-50/80 px-10 py-6 dark:border-slate-800 dark:bg-slate-800/40">
-                            <div className="flex w-full items-center justify-end gap-3">
-                                <DialogClose asChild>
-                                    <Button
-                                        variant="ghost"
-                                        className="h-12 rounded-2xl px-8 font-bold text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-800"
-                                        onClick={() => {
-                                            reset();
-                                            clearErrors();
-                                            setOpen(false);
-                                        }}
-                                    >
-                                        {t('common.cancel')}
-                                    </Button>
-                                </DialogClose>
-
-                                <Button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="h-12 min-w-[160px] rounded-2xl bg-indigo-600 px-8 font-black text-white shadow-xl shadow-indigo-500/20 active:scale-95 disabled:opacity-50 dark:bg-indigo-500"
-                                >
-                                    {processing ? t('common.updating') : t('mock_table.update_mock')}
-                                </Button>
-                            </div>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
-        </>
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="rounded-xl text-xs bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 cursor-pointer font-bold"
+                        >
+                            {t('save') || 'Saqlash'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }

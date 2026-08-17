@@ -46,52 +46,51 @@ export default function CreateAttemptModal({ mock, test, label }: Props) {
     return (
         <>
             <button
+                type="button"
                 onClick={() => setOpen(true)}
-                className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 px-4 py-4 font-black text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 active:scale-95 dark:shadow-none"
+                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-3 font-bold text-white shadow-xs transition-all active:scale-95 cursor-pointer"
             >
-                <CirclePlay className="h-5 w-5 transition-transform group-hover:scale-110" />
-                <span className="text-xs tracking-widest uppercase">{label || t('attempt_modal.start_practice')}</span>
+                <CirclePlay className="h-4.5 w-4.5 transition-transform group-hover:scale-110" />
+                <span className="text-xs tracking-wider uppercase">{label || t('attempt_modal.start_practice') || 'Boshlash'}</span>
             </button>
 
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="overflow-hidden rounded-[1.25rem] border-none bg-white p-0 shadow-2xl md:rounded-[2rem] sm:max-w-[420px] dark:bg-slate-950">
-                    {/* 🌑 Header: Micro-Compact */}
-                    <div className="bg-slate-900 p-4 text-white md:p-6 dark:bg-slate-900/50">
+                <DialogContent className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white p-0 shadow-2xl sm:max-w-[440px] dark:bg-slate-950">
+                    {/* Header */}
+                    <div className="bg-slate-900 p-5 text-white dark:bg-slate-900/80">
                         <DialogHeader>
-                            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg border border-blue-500/30 bg-blue-500/20 text-blue-400">
+                            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600/30 text-indigo-400">
                                 <Headphones className="h-4 w-4" />
                             </div>
-                            <DialogTitle className="text-lg md:text-xl leading-snug font-black tracking-tight">{t('attempt_modal.ready_title')}</DialogTitle>
-                            <DialogDescription className="mt-0.5 text-[11px] md:text-xs font-medium text-slate-400">
-                                {t('attempt_modal.mic_requirement')}
+                            <DialogTitle className="text-lg font-bold tracking-tight">{t('attempt_modal.ready_title') || "Imtihonga tayyormisiz?"}</DialogTitle>
+                            <DialogDescription className="mt-0.5 text-xs text-slate-400">
+                                {t('attempt_modal.mic_requirement') || "Iltimos, mikrofoningiz to'g'ri ishlayotganiga ishonch hosil qiling"}
                             </DialogDescription>
                         </DialogHeader>
                     </div>
 
-                    <div className="space-y-4 p-4 md:p-6">
-                        {/* 🚀 Primary Action (Micro-Compact) */}
-                        <form onSubmit={submit} className="w-full space-y-2.5">
+                    <div className="space-y-4 p-5">
+                        {/* Primary Action */}
+                        <form onSubmit={submit} className="w-full space-y-3">
                             {test?.parts && test.parts.length > 0 && (
-                                <div className="space-y-2 mb-4">
-                                    <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
-                                        {t('attempt_modal.select_parts', 'Select Parts')}
+                                <div className="space-y-2 mb-3">
+                                    <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                                        {t('attempt_modal.select_parts') || 'Bo\'limlarni tanlang'}
                                     </span>
                                     <div className="grid gap-2 grid-cols-2">
                                         {test.parts.map((part) => (
                                             <label
                                                 key={part.id}
-                                                className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition-all ${
+                                                className={`flex cursor-pointer items-center justify-between rounded-xl border p-2.5 transition-all ${
                                                     data.part_ids.includes(part.id)
-                                                        ? 'border-blue-500/50 bg-blue-50/50 dark:border-blue-500/30 dark:bg-blue-500/10'
+                                                        ? 'border-indigo-500 bg-indigo-50/60 dark:border-indigo-500/50 dark:bg-indigo-500/10'
                                                         : 'border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50'
                                                 }`}
                                             >
-                                                <div className="flex flex-col">
-                                                    <span className={`text-xs font-bold ${data.part_ids.includes(part.id) ? 'text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400'}`}>
-                                                        {part.name}
-                                                    </span>
-                                                </div>
-                                                <div className={`flex h-4 w-4 items-center justify-center rounded-md border ${data.part_ids.includes(part.id) ? 'border-blue-500 bg-blue-500' : 'border-slate-300 dark:border-slate-700'}`}>
+                                                <span className={`text-xs font-bold ${data.part_ids.includes(part.id) ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                    {part.name}
+                                                </span>
+                                                <div className={`flex h-4 w-4 items-center justify-center rounded-md border ${data.part_ids.includes(part.id) ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300 dark:border-slate-700'}`}>
                                                     {data.part_ids.includes(part.id) && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
                                                 </div>
                                                 <input
@@ -116,20 +115,20 @@ export default function CreateAttemptModal({ mock, test, label }: Props) {
                             <Button
                                 type="submit"
                                 disabled={processing || !hasCheckedMic}
-                                className={`group h-12 w-full rounded-xl text-xs font-black transition-all md:h-14 ${
+                                className={`group h-11 w-full rounded-xl text-xs font-bold transition-all ${
                                     hasCheckedMic
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 active:scale-[0.98]'
-                                        : 'bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-600 border border-transparent dark:border-slate-800 cursor-not-allowed'
+                                        ? 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-700 active:scale-[0.98] cursor-pointer'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border border-transparent dark:border-slate-800 cursor-not-allowed'
                                 }`}
                             >
                                 {processing ? (
                                     <span className="flex items-center gap-1.5">
                                         <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                        {t('common.preparing')}...
+                                        {t('common.preparing') || 'Tayyorlanmoqda'}...
                                     </span>
                                 ) : (
-                                    <span className="flex items-center justify-center gap-1.5 tracking-widest uppercase">
-                                        {t('attempt_modal.start_now')}
+                                    <span className="flex items-center justify-center gap-1.5 tracking-wider uppercase">
+                                        {t('attempt_modal.start_now') || 'Imtihonni boshlash'}
                                         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                                     </span>
                                 )}

@@ -83,10 +83,13 @@ class PracticeController extends Controller
 
             $answers = $data['answers'] ?? [];
             foreach ($answers as $index => $answerData) {
-                $audioPath = null;
+                $payload = [
+                    'started_at' => $answerData['started_at'] ?? null,
+                    'finished_at' => $answerData['finished_at'] ?? null,
+                ];
 
                 if ($request->hasFile("answers.$index.audio_path")) {
-                    $audioPath = $this->fileUploadService->uploadAudio($request->file("answers.$index.audio_path"), 'attempt_answers_audio');
+                    $payload['audio_path'] = $this->fileUploadService->uploadAudio($request->file("answers.$index.audio_path"), 'attempt_answers_audio');
                 }
 
                 \App\Models\AttemptAnswer::updateOrCreate(
@@ -94,11 +97,7 @@ class PracticeController extends Controller
                         'attempt_part_id' => $attemptPart->id,
                         'question_id' => $answerData['question_id'],
                     ],
-                    [
-                        'started_at' => $answerData['started_at'] ?? null,
-                        'finished_at' => $answerData['finished_at'] ?? null,
-                        'audio_path' => $audioPath,
-                    ]
+                    $payload
                 );
             }
 
@@ -131,6 +130,28 @@ class PracticeController extends Controller
             DB::rollBack();
             Log::error($exception->getMessage());
             throw \Illuminate\Validation\ValidationException::withMessages(['error' => [$exception->getMessage()]]);
+        }
+    }
+
+    /**
+     * Record anti-cheat violation (tab switch, focus loss)
+     */
+    public function recordViolation(Request $request, $attempt_id)
+    {
+        try {
+            $attempt = Attempt::findOrFail($attempt_id);
+            $count = (int) $request->input('count', 1);
+            $attempt->increment('tab_switch_count', $count);
+
+            return response()->json([
+                'success' => true,
+                'tab_switch_count' => $attempt->fresh()->tab_switch_count,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 }

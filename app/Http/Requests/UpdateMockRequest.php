@@ -16,9 +16,11 @@ class UpdateMockRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge([
-            'user_id' => auth()->id(),
-        ]);
+        if ($this->has('started_at')) {
+            $this->merge([
+                'starts_at' => $this->started_at,
+            ]);
+        }
     }
 
     /**
@@ -29,18 +31,12 @@ class UpdateMockRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'exists:users,id'],
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:255'],
-            'audio_path' => [
-                'nullable',
-                'file',
-                'max:12048',
-                'mimetypes:audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,audio/ogg,video/mp4'
-            ],
-            'starts_at' => ['nullable', 'date'],
-            'active' => ['required', 'boolean'],
-            'open' => ['required', 'boolean'],
+            'name' => 'required|string|max:255',
+            'test_id' => 'required|exists:tests,id',
+            'comment' => 'nullable|string',
+            'started_at' => 'required|date',
+            'finished_at' => 'required|date|after:started_at',
+            'active' => 'nullable|boolean',
         ];
     }
 }

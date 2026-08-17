@@ -202,6 +202,60 @@ class MultitestUzBotService
     }
 
     /**
+     * Send attempt result notification to user via Telegram
+     */
+    public function sendAttemptResultNotification(\App\Models\Attempt $attempt): void
+    {
+        $attempt->loadMissing(['user', 'mock', 'mockStudent', 'test']);
+
+        $telegramId = $attempt->user?->telegram_id;
+        if (!$telegramId) {
+            return;
+        }
+
+        $studentName = $attempt->mockStudent?->name ?? $attempt->user?->name ?? 'Talaba';
+        $testName = $attempt->mock?->name ?? $attempt->test?->name ?? 'Imtihon';
+        $score = $attempt->score ?? ($attempt->ai_score_avg ? number_format($attempt->ai_score_avg, 1) : 'Tayyor');
+        $tabViolations = $attempt->tab_switch_count ?? 0;
+        $attemptUrl = route('attempt.show', $attempt->id);
+        $certificateUrl = route('certificate.verify', $attempt->id);
+
+        $text = "🎉 <b>Tabriklaymiz, natijangiz tayyor!</b>\n\n"
+            . "👤 <b>Nomzod:</b> {$studentName}\n"
+            . "📝 <b>Imtihon:</b> {$testName}\n"
+            . "⭐️ <b>Natija (Ball):</b> <b>{$score}</b>\n";
+
+        if ($tabViolations > 0) {
+            $text .= "⚠️ <b>Qoidabuzarliklar:</b> {$tabViolations} ta tab almashtirish\n";
+        }
+
+        $text .= "\nBatafsil tahlil va sertifikatni ko'rish uchun quyidagi tugmalardan foydalaning:";
+
+        $keyboard = Keyboard::make()->inline();
+        $keyboard->row([
+            Keyboard::inlineButton([
+                'text' => '📊 Natijani ko\'rish',
+                'url' => $attemptUrl,
+            ]),
+            Keyboard::inlineButton([
+                'text' => '📜 Sertifikat',
+                'url' => $certificateUrl,
+            ]),
+        ]);
+
+        try {
+            $this->telegram->sendMessage([
+                'chat_id' => $telegramId,
+                'text' => $text,
+                'parse_mode' => 'HTML',
+                'reply_markup' => $keyboard,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send telegram attempt result notification: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * 🔹 Add persistent web app button (like Telegram Wallet)
      */
     public function setPersistentMenuButton(): void

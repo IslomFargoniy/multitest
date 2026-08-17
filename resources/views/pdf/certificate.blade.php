@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Certificate Of Achievement</title>
+    <title>Certificate Of Achievement - {{ $certNumber ?? 'MT' }}</title>
     <style>
         @page {
             size: A4 landscape;
             margin: 0;
         }
         body {
-            font-family: 'Inter', system-ui, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: #f8fafc;
             color: #1e293b;
             margin: 0;
@@ -18,17 +18,17 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
+            -webkit-print-color-adjust: exact;
         }
         .certificate-container {
             width: 1040px;
             height: 720px;
-            background: white;
+            background: #ffffff;
             position: relative;
-            border: 40px solid transparent;
-            border-image: linear-gradient(to bottom right, #4f46e5, #818cf8) 1;
+            border: 24px solid #4f46e5;
             padding: 40px;
             box-sizing: border-box;
-            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
         }
         .decorative-elements {
             position: absolute;
@@ -51,32 +51,58 @@
             position: relative;
             z-index: 10;
             text-align: center;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .brand-logo {
+            font-size: 20px;
+            font-weight: 900;
+            color: #4f46e5;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .cert-code {
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: bold;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 4px 12px;
+            border-radius: 6px;
         }
         .header h1 {
-            margin: 0;
-            font-size: 52px;
+            margin: 10px 0 0;
+            font-size: 44px;
             font-weight: 900;
             color: #1e1b4b;
             text-transform: uppercase;
-            letter-spacing: -2px;
+            letter-spacing: 1px;
         }
         .header p {
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 700;
             color: #6366f1;
-            margin-top: 5px;
+            margin-top: 4px;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
         }
         .present-text {
-            margin-top: 40px;
+            margin-top: 15px;
             font-style: italic;
-            font-size: 20px;
+            font-size: 16px;
             color: #64748b;
         }
         .recipient-name {
-            margin: 20px 0;
-            font-size: 48px;
+            margin: 10px 0;
+            font-size: 38px;
             font-weight: 800;
             color: #1e293b;
             border-bottom: 2px solid #e2e8f0;
@@ -84,69 +110,78 @@
             padding: 0 40px 5px;
         }
         .achievement-text {
-            margin: 30px auto;
-            max-width: 600px;
-            font-size: 18px;
-            line-height: 1.6;
+            margin: 10px auto 20px;
+            max-width: 650px;
+            font-size: 15px;
+            line-height: 1.5;
             color: #475569;
         }
         .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            display: flex;
+            justify-content: center;
             gap: 20px;
-            margin-top: 40px;
-            padding: 0 50px;
+            padding: 0 40px;
         }
         .stat-card {
             background: #f8fafc;
-            padding: 20px;
-            border-radius: 20px;
-            border: 1px solid #f1f5f9;
+            padding: 12px 24px;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            min-width: 140px;
+            text-align: center;
         }
         .stat-label {
-            font-size: 10px;
-            font-weight: 900;
+            font-size: 9px;
+            font-weight: 800;
             text-transform: uppercase;
             color: #94a3b8;
             letter-spacing: 1px;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         .stat-value {
-            font-size: 24px;
-            font-weight: 800;
+            font-size: 22px;
+            font-weight: 900;
             color: #4f46e5;
         }
         .footer-info {
-            margin-top: 60px;
             display: flex;
-            justify-content: space-around;
-            align-items: flex-end;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 40px;
+            margin-top: 20px;
         }
         .signature-box {
             text-align: center;
         }
         .signature-line {
-            width: 200px;
+            width: 160px;
             height: 1px;
-            background: #cbd5e1;
-            margin-bottom: 10px;
+            background: #94a3b8;
+            margin-bottom: 6px;
         }
         .signature-text {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 700;
-            color: #1e293b;
+            color: #475569;
         }
-        .seal {
-            width: 80px; height: 80px;
-            background: #4f46e5;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            font-weight: 900;
-            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
+        .qr-box {
+            text-align: center;
+        }
+        .qr-img {
+            width: 70px;
+            height: 70px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            padding: 2px;
+        }
+        .qr-label {
+            font-size: 8px;
+            font-weight: bold;
+            color: #94a3b8;
+            text-transform: uppercase;
+            margin-top: 2px;
+            letter-spacing: 0.5px;
         }
     </style>
 </head>
@@ -157,35 +192,40 @@
             <div class="circle-2"></div>
         </div>
         <div class="content">
+            <div class="top-bar">
+                <span class="brand-logo">MULTITEST</span>
+                <span class="cert-code">{{ $certNumber ?? ('MT-' . str_pad($attempt->id, 6, '0', STR_PAD_LEFT)) }}</span>
+            </div>
+
             <div class="header">
                 <h1>Certificate</h1>
                 <p>Of Achievement</p>
             </div>
             
-            <p class="present-text">This is proudly presented to</p>
-            <div class="recipient-name">{{ $attempt->user?->name ?? 'Guest' }}</div>
+            <p class="present-text">This certificate is proudly awarded to</p>
+            <div class="recipient-name">
+                {{ $attempt->mockStudent?->name ?? $attempt->user?->name ?? 'Candidate' }}
+            </div>
             
             <p class="achievement-text">
-                For the successful completion of the <strong>{{ $attempt->test?->name ?? 'Exam' }}</strong> mock exam 
-                on our platform with an overall performance evaluated as <strong>{{ $attempt->level ?? 'N/A' }}</strong>.
+                For successfully completing the <strong>{{ $attempt->mock?->name ?? $attempt->test?->name ?? 'Exam' }}</strong> 
+                examination evaluated by our MultiTest assessment system.
             </p>
 
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-label">Overall Score</div>
-                    <div class="stat-value">{{ $attempt->score ?? 0 }}/75</div>
+                    <div class="stat-value">{{ $attempt->score ?? ($attempt->ai_score_avg ? number_format($attempt->ai_score_avg, 1) : '-') }}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">CEFR Level</div>
-                    <div class="stat-value">{{ $attempt->level ?? 'N/A' }}</div>
+                    <div class="stat-label">CEFR / Band</div>
+                    <div class="stat-value">{{ $attempt->level ?? ($attempt->score >= 7 ? 'C1' : ($attempt->score >= 5.5 ? 'B2' : 'B1')) }}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Attempt Date</div>
-                    <div class="stat-value" style="font-size: 14px;">{{ $attempt->created_at?->format('M d, Y') ?? 'N/A' }}</div>
-                </div>
-                <div class="stat-card" style="background: #4f46e5;">
-                    <div class="stat-label" style="color: #c7d2fe;">Status</div>
-                    <div class="stat-value" style="color: white; font-size: 18px;">Verified</div>
+                    <div class="stat-label">Issue Date</div>
+                    <div class="stat-value" style="font-size: 15px; padding-top: 4px;">
+                        {{ $attempt->evaluated_at?->format('d.m.Y') ?? $attempt->finished_at?->format('d.m.Y') ?? now()->format('d.m.Y') }}
+                    </div>
                 </div>
             </div>
 
@@ -194,12 +234,19 @@
                     <div class="signature-line"></div>
                     <div class="signature-text">Platform Director</div>
                 </div>
-                
-                <div class="seal">M</div>
+
+                <div class="qr-box">
+                    @if(isset($qrCodeUrl))
+                        <img src="{{ $qrCodeUrl }}" alt="Verify QR Code" class="qr-img">
+                    @else
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ urlencode(route('certificate.verify', $attempt->id)) }}" alt="Verify QR Code" class="qr-img">
+                    @endif
+                    <div class="qr-label">Scan to verify</div>
+                </div>
 
                 <div class="signature-box">
                     <div class="signature-line"></div>
-                    <div class="signature-text">AI Examiner System</div>
+                    <div class="signature-text">AI Evaluation Board</div>
                 </div>
             </div>
         </div>

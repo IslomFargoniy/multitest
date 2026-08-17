@@ -2,82 +2,99 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Mock;
 use App\Http\Requests\StoreMockRequest;
 use App\Http\Requests\UpdateMockRequest;
+use App\Models\Mock;
+use App\Models\Test;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
-use App\Services\FileUploadService;
 use Inertia\Inertia;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class MockController extends Controller
 {
-    protected FileUploadService $fileUploadService;
+    use AuthorizesRequests;
 
-    public function __construct(FileUploadService $fileUploadService)
-    {
-        $this->fileUploadService = $fileUploadService;
-    }
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        try {
-            if ($request->per_page) {
-                $per_page = $request->per_page;
-            } else {
-                $per_page = 10;
-            }
+        $this->authorize('viewAny', Mock::class);
 
+        $per_page = $request->per_page === 'all' ? 100 : min((int)($request->per_page ?? 10), 100);
 
-            if (!Auth::user()->hasRole(['Admin', 'Teacher'])) {
-                return back()->with('error', "You are not allowed to access this page");
-            }
+        $mock = Mock::with([
+            'students.attempt',
+            'test',
+            'user:id,name',
+        ]);
 
-            $mocks = Mock::query()
-                ->with([
-                    'mock_tests' => function ($query) {
-                        $query->with('test');
-                    }
-                ]);
-
-            if ($request->has('search')) {
-                $search = $request->input('search');
-                $mocks->where('name', 'like', '%' . $search . '%');
-            }
-
-            if ($request->has('from') && $request->has('to')) {
-                $from = $request->input('from');
-                $to = $request->input('to');
-                $mocks->whereBetween('created_at', [$from, $to . ' 23:59:59']);
-            }
-
-            if ($request->has('active')) {
-                $mocks->where('active', '=', $request->input('active'));
-            }
-
-            if ($request->has('open')) {
-                $mocks->where('open', '=', $request->input('open'));
-            }
-
-            if (!Auth::user()->hasRole('Admin')) {
-                $mocks->where('user_id', Auth::id());
-            }
-
-            $mock = $mocks->paginate($per_page);
-
-            return Inertia::render('mock/index', [
-                'mock' => $mock,
-            ]);
-
-        } catch (\Exception $exception) {
-            // Proper Inertia error response
-            throw ValidationException::withMessages([
-                'error' => [$exception->getMessage()],
-            ]);
+        if ($request->search) {
+            $mock->where(function ($query) use ($request) {
+                $query->where('name', 'like', "%$request->search%")
+                    ->orWhere('comment', 'like', "%$request->search%")
+                    ->orWhereHas('user', function ($q) use ($request) {
+                        $q->where('name', 'like', "%$request->search%");
+                    })
+                    ->orWhereHas('test', function ($q) use ($request) {
+                        $q->where('name', 'like', "%$request->search%");
+                    });
+            });
         }
+
+        if ($request->from && $request->to) {
+            $mock->whereBetween('created_at', [$request->from, $request->to . ' 23:59:59']);
+        }
+
+        if ($request->user_id) {
+            $mock->where('user_id', $request->user_id);
+        }
+
+        if ($request->teacher_id) {
+            $mock->where('user_id', $request->teacher_id);
+        }
+
+        if ($request->test_id) {
+            $mock->where('test_id', $request->test_id);
+        }
+
+        if (Auth::user()->hasRole('Admin')) {
+            // Admin can see everything
+        } elseif (Auth::user()->hasRole('Teacher')) {
+            // Teacher can see their own mocks
+            $mock->where('user_id', Auth::id());
+        } else {
+            // Students see active mocks
+            $mock->where('active', 1);
+        }
+
+        $mock = $mock->select('id', 'test_id', 'user_id', 'name', 'comment', 'active', 'started_at', 'finished_at', 'created_at')
+            ->orderBy('id', 'desc')
+            ->paginate($per_page);
+
+        // Filter tests based on role for search dropdowns
+        $tests_query = Test::query()->select('id', 'name');
+
+        if (Auth::user()->hasRole('Teacher')) {
+            $tests_query->where('user_id', Auth::id());
+        }
+
+        $teachers = Auth::user()->hasRole('Admin')
+            ? \App\Models\User\User::whereHas('roles', function ($q) {
+                $q->where('name', 'Teacher');
+            })->select('id', 'name')->get()
+            : [];
+
+        return Inertia::render('mock/index', [
+            'mock' => $mock,
+            'tests' => $tests_query->limit(100)->get(),
+            'users' => [],
+            'teachers' => $teachers,
+            'isAdmin' => Auth::user()->hasRole('Admin'),
+            'filters' => $request->only(['search', 'teacher_id', 'user_id', 'test_id', 'from', 'to', 'per_page']),
+        ]);
     }
 
     /**
@@ -94,23 +111,17 @@ class MockController extends Controller
     public function store(StoreMockRequest $request)
     {
         try {
+            $this->authorize('create', Mock::class);
 
             $data = $request->validated();
-
-            if ($request->hasFile('audio_path')) {
-                $data['audio_path'] = $this->fileUploadService->uploadAudio($request->file('audio_path'), 'mocks/audio');
-            } else {
-                $data['audio_path'] = '/en/audio/test-intro.mp3';
-            }
+            $data['starts_at'] = $data['started_at'] ?? now();
 
             Mock::create($data);
 
-            return redirect()->back()->with('success', 'Mock created successfully.');
-
-        } catch (\Exception $exception) {
-            // Proper Inertia error response
+            return back()->with('success', __('success.mock_created') ?? 'Mock test muvaffaqiyatli yaratildi');
+        } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'error' => [$exception->getMessage()],
+                'error' => [$e->getMessage()],
             ]);
         }
     }
@@ -118,9 +129,23 @@ class MockController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Mock $mock)
+    public function show(Request $request, Mock $mock)
     {
-        //
+        $this->authorize('view', $mock);
+
+        $mock->load([
+            'test',
+            'user',
+            'students.attempt',
+            'attempts.user',
+            'attempts.mockStudent',
+            'attempts.attempt_parts',
+        ]);
+
+        return Inertia::render('mock/show', [
+            'mock' => $mock,
+            'isAdmin' => Auth::user()->hasRole('Admin'),
+        ]);
     }
 
     /**
@@ -137,29 +162,18 @@ class MockController extends Controller
     public function update(UpdateMockRequest $request, Mock $mock)
     {
         try {
-
             $this->authorize('update', $mock);
+
             $data = $request->validated();
-            $oldFilePath = null;
-            if ($request->hasFile('audio_path')) {
-                $oldFilePath = $mock->audio_path;
-                $data['audio_path'] = $this->fileUploadService->uploadAudio($request->file('audio_path'), 'mocks/audio');
-            } else {
-                $data['audio_path'] = $mock->audio_path;
+            if (isset($data['started_at'])) {
+                $data['starts_at'] = $data['started_at'];
             }
 
             $mock->update($data);
-
-            if ($oldFilePath) {
-                $this->fileUploadService->deleteFile($oldFilePath);
-            }
-
-            return redirect()->back()->with('success', 'Mock updated successfully.');
-
-        } catch (\Exception $exception) {
-            // Proper Inertia error response
+            return back()->with('success', __('success.mock_updated') ?? 'Mock test muvaffaqiyatli yangilandi');
+        } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'error' => [$exception->getMessage()],
+                'error' => [$e->getMessage()],
             ]);
         }
     }
@@ -171,18 +185,20 @@ class MockController extends Controller
     {
         try {
             $this->authorize('delete', $mock);
-            $mock->delete();
 
-            if ($mock->audio_path) {
-                $this->fileUploadService->deleteFile($mock->audio_path);
-            }
+            \Illuminate\Support\Facades\DB::transaction(function () use ($mock) {
+                // Detach/nullify attempts so history is preserved without FK error
+                \App\Models\Attempt::where('mock_id', $mock->id)->update(['mock_id' => null]);
+                // Delete associated mock students
+                $mock->students()->delete();
+                // Delete the mock
+                $mock->delete();
+            });
 
-            return redirect()->back()->with('success', 'Mock deleted successfully.');
-
-        } catch (\Exception $exception) {
-            // Proper Inertia error response
-            throw ValidationException::withMessages([
-                'error' => [$exception->getMessage()],
+            return redirect()->route('mock.index')->with('success', __('success.mock_deleted') ?? "Mock o'chirildi");
+        } catch (\Exception $e) {
+            return redirect()->route('mock.index')->withErrors([
+                'error' => $e->getMessage(),
             ]);
         }
     }

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Language;
 use App\Http\Requests\StoreLanguageRequest;
 use App\Http\Requests\UpdateLanguageRequest;
+use App\Models\Language;
 use App\Models\Test;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +13,6 @@ use Inertia\Inertia;
 
 class LanguageController extends Controller
 {
-
     public function allJson()
     {
         try {
@@ -23,12 +22,12 @@ class LanguageController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $languages
+                'data' => $languages,
             ]);
         } catch (\Exception $exception) {
             return response()->json([
                 'status' => 'error',
-                'message' => $exception->getMessage()
+                'message' => $exception->getMessage(),
             ], 500);
         }
     }
@@ -41,7 +40,7 @@ class LanguageController extends Controller
                 ->withCount([
                     'tests' => function ($query) {
                         $query->where('is_public', true);
-                    }
+                    },
                 ])
                 ->whereHas('tests', function ($query) {
                     $query->where(function ($query) {
@@ -54,12 +53,12 @@ class LanguageController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $languages
+                'data' => $languages,
             ]);
         } catch (\Exception $exception) {
             return response()->json([
                 'status' => 'error',
-                'message' => $exception->getMessage()
+                'message' => $exception->getMessage(),
             ], 500);
         }
     }
@@ -102,15 +101,17 @@ class LanguageController extends Controller
 
             $testQuery = Test::query()
                 ->with([
-                    'language'
+                    'language',
+                    'parts',
+                    'user:id,name,avatar',
                 ])
                 ->where('language_id', '=', $language->id);
 
             if ($request->search) {
                 $search = $request->search;
                 $testQuery->where(function ($query) use ($search) {
-                    $query->where('name', 'like', '%' . $search . '%')
-                        ->orWhere('description', 'like', '%' . $search . '%');
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('description', 'like', '%'.$search.'%');
                 });
             }
 
@@ -129,9 +130,8 @@ class LanguageController extends Controller
 
             return Inertia::render('language/index', [
                 'test' => $test,
-                'language' => $language
+                'language' => $language,
             ]);
-
 
         } catch (\Exception $exception) {
             // Proper Inertia error response

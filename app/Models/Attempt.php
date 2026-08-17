@@ -5,13 +5,13 @@ namespace App\Models;
 use App\Models\User\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Attempt extends Model
 {
     /** @use HasFactory<\Database\Factories\AttemptFactory> */
     use HasFactory, SoftDeletes;
+
     protected static function booted()
     {
         static::deleting(function ($attempt) {
@@ -21,16 +21,17 @@ class Attempt extends Model
         });
     }
 
-
     protected $fillable = [
         'name',
         'user_id',
         'mock_id',
+        'mock_student_id',
         'test_id',
         'started_at',
         'finished_at',
         'evaluated_at',
         'score',
+        'tab_switch_count',
         'review'
     ];
 
@@ -38,11 +39,17 @@ class Attempt extends Model
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
         'score' => 'integer',
+        'tab_switch_count' => 'integer',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function mockStudent()
+    {
+        return $this->belongsTo(MockStudent::class, 'mock_student_id');
     }
 
     public function scopeWithAiScoreAvg($query)
@@ -64,5 +71,4 @@ class Attempt extends Model
     {
         return $this->hasMany(AttemptPart::class, 'attempt_id');
     }
-
 }

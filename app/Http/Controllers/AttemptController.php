@@ -29,9 +29,10 @@ class AttemptController extends Controller
                 ->select('attempts.*')
                 ->withAiScoreAvg()
                 ->with([
-                    'user',
+                    'user.roles',
                     'mock',
-                    'test',
+                    'mockStudent',
+                    'test.language',
                     'attempt_parts' => function ($query) {
                         $query->addSelect(\Illuminate\Support\Facades\DB::raw("aiScoreAvg(null, attempt_parts.id) as ai_score_avg"));
                     },
@@ -232,6 +233,13 @@ class AttemptController extends Controller
             $attempt->review = $request->input('review');
             $attempt->evaluated_at = now();
             $attempt->save();
+
+            // Send Telegram Notification if applicable
+            try {
+                app(\App\Services\Telegram\MultitestUzBotService::class)->sendAttemptResultNotification($attempt);
+            } catch (\Exception $e) {
+                \Log::warning('Telegram notification failed on evaluate: ' . $e->getMessage());
+            }
 
         } catch (\Exception $exception) {
             throw ValidationException::withMessages([
