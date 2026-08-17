@@ -13,7 +13,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { Language } from '@/types';
 import { IoCloudUploadOutline, IoCreate } from 'react-icons/io5';
 
-export default function CreateTestModal() {
+export default function CreateTestModal({ defaultLanguageId }: { defaultLanguageId?: number }) {
     const { t, i18n } = useTranslation();
     const [open, setOpen] = useState(false);
     const [languages, setLanguages] = useState<Language[]>([]);
@@ -57,10 +57,16 @@ export default function CreateTestModal() {
         audio_path: string | File;
     }>({
         name: '',
-        language_id: 0,
+        language_id: defaultLanguageId || 0,
         description: '',
         audio_path: '',
     });
+
+    useEffect(() => {
+        if (open && defaultLanguageId) {
+            setData('language_id', defaultLanguageId);
+        }
+    }, [open, defaultLanguageId]);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();

@@ -83,7 +83,7 @@ export default function LanguageShow() {
 
                     <div className="flex items-center gap-2">
                         {(isAdmin || isTeacher) && (
-                            <CreateTestModal />
+                            <CreateTestModal defaultLanguageId={language?.id} />
                         )}
                     </div>
                 </div>
