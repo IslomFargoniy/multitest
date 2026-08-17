@@ -118,7 +118,13 @@ export default function MockStudentManager({ mockId, mockName, students = [] }: 
             <body>
                 <div class="passes-grid">${passesHtml}</div>
                 <script>
-                    window.onload = function() { window.print(); }
+                    window.onload = function() {
+                        window.focus();
+                        window.print();
+                    };
+                    window.onafterprint = function() {
+                        window.close();
+                    };
                 </script>
             </body>
             </html>
