@@ -94,11 +94,6 @@ const MockTable = ({ tests = [], searchData, ...mock }: MockTableProps) => {
 
     return (
         <div>
-            <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('mock') || 'Mock Testlar'}</h2>
-                <CreateMockModal tests={tests} />
-            </div>
-
             {/* Cards Grid */}
             {mock.data.length === 0 ? (
                 <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-12 text-center text-sm text-slate-500">
