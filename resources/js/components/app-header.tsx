@@ -39,12 +39,12 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
     const rightNavItems: NavItem[] = [
         {
             title: t('sidebar.repository'),
-            href: 'https://github.com/islamabdurahman',
+            href: 'https://github.com/IslomFargoniy',
             icon: Folder,
         },
         {
             title: t('sidebar.telegram'),
-            href: 'https://t.me/livelongevity',
+            href: 'https://t.me/IslomFargniy',
             icon: BookOpen,
         },
     ];

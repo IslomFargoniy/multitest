@@ -5,7 +5,7 @@
   <h3>The ultimate high-performance boilerplate to kickstart your next Modern Web App.</h3>
 
   <p>
-    <a href="https://github.com/islamabdurahman"><img src="https://img.shields.io/badge/Author-Islam_Abdurahman-2ea44f?style=for-the-badge&logo=github" alt="Author"></a>
+    <a href="https://github.com/IslomFargoniy"><img src="https://img.shields.io/badge/Author-Islam_Abdurahman-2ea44f?style=for-the-badge&logo=github" alt="Author"></a>
     <img src="https://img.shields.io/badge/Laravel-v12-FF2D20?style=for-the-badge&logo=laravel" alt="Laravel">
     <img src="https://img.shields.io/badge/React-v19-20232a?style=for-the-badge&logo=react&logoColor=61dafb" alt="React">
     <img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP">
@@ -132,10 +132,10 @@ If this boilerplate saved you valuable hours and provides you a great starting e
 <br />
 
 **Connect with me:**
-- 🐙 [GitHub @islamabdurahman](https://github.com/islamabdurahman)
-- 🦊 [GitLab @islamabdurahman](https://gitlab.com/islamabdurahman)
-- ▶️ [YouTube - Islam Abdurahman](https://www.youtube.com/@IslamAbdurahman)
-- ✈️ [Telegram Channel - LiveLongevity](https://t.me/LiveLongevity)
+- 🐙 [GitHub @IslomFargoniy](https://github.com/IslomFargoniy)
+- 🦊 [GitLab @IslamAbdurahman](https://gitlab.com/islamabdurahman)
+- ▶️ [YouTube - IslomFargniy](https://www.youtube.com/@IslomFargniy)
+- ✈️ [Telegram - IslomFargniy](https://t.me/IslomFargniy)
 
 ---
 

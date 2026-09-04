@@ -17,7 +17,7 @@ const Footer: React.FC = () => {
         .join('.');
 
     const socialLinks = [
-        { icon: 'tabler:brand-telegram', href: 'https://t.me/livelongevity' }, // Primary for Uzbekistan
+        { icon: 'tabler:brand-telegram', href: 'https://t.me/IslomFargniy' }, // Primary for Uzbekistan
         { icon: 'tabler:brand-instagram', href: 'https://instagram.com' },
         { icon: 'tabler:brand-youtube', href: 'https://youtube.com' },
     ];
@@ -89,7 +89,7 @@ const Footer: React.FC = () => {
                                 </span>
                             </a>
 
-                            <a href="https://t.me/livelongevity" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4">
+                            <a href="https://t.me/IslomFargniy" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4">
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition-all group-hover:bg-sky-600 group-hover:text-white dark:bg-sky-900/20 dark:text-sky-400">
                                     <Icon icon="tabler:brand-telegram" className="text-xl" />
                                 </div>
